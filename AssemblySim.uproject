@@ -1,0 +1,22 @@
+{
+	"FileVersion": 3,
+	"EngineAssociation": "{28CD1AE5-4447-28FC-6581-87924ED30C8F}",
+	"Category": "",
+	"Description": "",
+	"Modules": [
+		{
+			"Name": "AssemblySim",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		}
+	],
+	"Plugins": [
+		{
+			"Name": "ModelingToolsEditorMode",
+			"Enabled": true,
+			"TargetAllowList": [
+				"Editor"
+			]
+		}
+	]
+}
