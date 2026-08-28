@@ -5,6 +5,7 @@
 #include "AssemblySlotComponent.h"
 #include "AssemblyToolBase.h"
 #include "AssemblyFastenerNode.h"
+#include "AssemblyPlayerController.h"
 
 AAssemblyInteractionManager::AAssemblyInteractionManager()
 {
@@ -16,11 +17,11 @@ AAssemblyInteractionManager::AAssemblyInteractionManager()
 void AAssemblyInteractionManager::BeginPlay()
 {
 	Super::BeginPlay();
-	PC = UGameplayStatics::GetPlayerController(this, 0);
+	PC = Cast<AAssemblyPlayerController>(UGameplayStatics::GetPlayerController(this, 0));
 	if (PC)
 	{
-		PC->bShowMouseCursor = true;
-		PC->bEnableClickEvents = true;
+		//PC->bShowMouseCursor = true;
+		//PC->bEnableClickEvents = true;
 	}
 }
 
@@ -86,7 +87,7 @@ void AAssemblyInteractionManager::Tick(float DeltaTime)
 			{
 				FTransform CameraTransform(CameraRotation, CameraLocation);
 				FVector CameraLocalHitPoint = CameraTransform.InverseTransformPosition(HitResult.Location);
-				UE_LOG(LogTemp, Log, TEXT("T %f %f"), T, CameraLocalHitPoint.X);
+				//UE_LOG(LogTemp, Log, TEXT("T %f %f"), T, CameraLocalHitPoint.X);
 				T = FMath::Min(T, CameraLocalHitPoint.X);
 			}
 			FVector CurrentHitLocation = WorldLoc + WorldDir * T;
@@ -100,6 +101,7 @@ void AAssemblyInteractionManager::Tick(float DeltaTime)
 void AAssemblyInteractionManager::OnMouseLeftPressed()
 {
 	if (!PC) return;
+	PC->SetDraggingState(true);
 
 	FHitResult HitResult;
 	AActor* HitActor = nullptr;
@@ -132,6 +134,9 @@ void AAssemblyInteractionManager::OnMouseLeftPressed()
 
 void AAssemblyInteractionManager::OnMouseLeftReleased()
 {
+	if (!PC) return;
+	PC->SetDraggingState(false);
+
 	if (!HeldActor) return;
 
 	if (AAssemblyNodeBase* HitNode = Cast<AAssemblyNodeBase>(HeldActor)) {

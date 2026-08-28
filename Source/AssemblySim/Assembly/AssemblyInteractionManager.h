@@ -10,6 +10,7 @@ class AAssemblyNodeBase;
 class AAssemblyFastenerNode;
 class UAssemblySlotComponent;
 class AAssemblyToolBase;
+class AAssemblyPlayerController;
 
 UCLASS()
 class ASSEMBLYSIM_API AAssemblyInteractionManager : public AActor
@@ -41,7 +42,7 @@ protected:
 	void OnMouseLeftReleased();
 
 private:
-	APlayerController* PC = nullptr;
+	AAssemblyPlayerController* PC = nullptr;
 
 	// 射线检测鼠标选中的 AssemblyNodeBase
 	AActor* GetNodeUnderCursor() const;
