@@ -26,7 +26,6 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AssemblyToolBase")
     TObjectPtr<USceneComponent> DefaultRoot;
 
-    // 工具的视觉网格体（在蓝图中指定具体模型）
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AssemblyToolBase")
     UStaticMeshComponent* MeshComponent;
 
@@ -36,17 +35,16 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AssemblyToolBase")
     FGameplayTag ToolTag;
 
-    // 当前吸附的零件（nullptr 表示未吸附）
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AssemblyToolBase")
     AAssemblyFastenerNode* AttachedNode = nullptr;
 
 public:
-    UFUNCTION(BlueprintPure, Category = "AssemblyToolBase")
-    AAssemblyFastenerNode* GetAttachedNode() const { return AttachedNode; }
-
     UFUNCTION(BlueprintCallable, Category = "AssemblyToolBase")
     bool AttachToNode(AAssemblyFastenerNode* Node);
 
     UFUNCTION(BlueprintCallable, Category = "AssemblyToolBase")
     bool DetachFromNode();
+
+    UFUNCTION(BlueprintCallable, Category = "AssemblyToolBase")
+    void OnClicked();
 };

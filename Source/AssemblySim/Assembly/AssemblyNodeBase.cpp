@@ -20,14 +20,14 @@ void AAssemblyNodeBase::BeginPlay()
     // 收集挂载在自身 Actor 上的所有插槽组件
     GetComponents<UAssemblySlotComponent>(ChildSlots);
 
-    // 初始状态下，若自己还没被完全装好，先禁用身上的子插槽（比如盖子还没盖上，禁止插螺丝）
-    RefreshChildSlotsActivation();
+    // 初始状态刷新
+    UpdateChildrenAssemblyStatus();
 }
 
 
 bool AAssemblyNodeBase::AttachToSlot(UAssemblySlotComponent* Slot)
 {
-    if (Slot->bIsOccupied) return false;
+    if (Slot->OccupiedNode) return false;
 
     UE_LOG(LogTemp, Log, TEXT("AttachToSlot %s->%s"), *NodeTag.ToString(), *Slot->AcceptNodeTag.ToString());
 
@@ -36,7 +36,6 @@ bool AAssemblyNodeBase::AttachToSlot(UAssemblySlotComponent* Slot)
     AttachToComponent(Slot, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
 
     ParentSlot = Slot;
-    bIsAttached = true;
 
     RefreshChildSlotsActivation();
     return true;
@@ -53,7 +52,6 @@ bool AAssemblyNodeBase::DetachFromSlot()
     DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 
     ParentSlot = nullptr;
-    bIsAttached = false;
 
     RefreshChildSlotsActivation();
     return true;
@@ -64,10 +62,13 @@ bool AAssemblyNodeBase::CanDetachNode() const
     // 根节点禁止被拆走
     if (bIsRootNode) return false;
 
-    // 规则 2: 如果身上有子插槽被占用 (如盖子上还有螺丝没拆)，禁止拿走盖子！
+    // Rule1: 父节点限制
+    if (ParentSlot && ParentSlot->bIsLocked) return false;
+
+    // Rule2: 子节点限制
     for (const UAssemblySlotComponent* Slot : ChildSlots)
     {
-        if (Slot && Slot->bIsOccupied)
+        if (Slot && Slot->OccupiedNode)
         {
             return false;
         }
@@ -86,7 +87,7 @@ void AAssemblyNodeBase::UpdateChildrenAssemblyStatus()
         if (!Slot) continue;
 
         // 如果插槽没被占用，或者插槽上的部件没有彻底锁死 (Secured)
-        if (!Slot->bIsOccupied || !Slot->CurrentOccupiedNode || !Slot->CurrentOccupiedNode->bIsFullySecured)
+        if (!Slot->OccupiedNode || !Slot->OccupiedNode->IsCompleted())
         {
             bAllChildrenReady = false;
             break;
@@ -98,7 +99,7 @@ void AAssemblyNodeBase::UpdateChildrenAssemblyStatus()
     // 只要盖子被装上了 (bIsMounted)，即使螺丝还没拧，也开启盖子上的螺丝孔插槽
     RefreshChildSlotsActivation();
 
-    // 向上递归通知上层节点 (例如：盖子装好了 $\rightarrow$ 通知发动机 $\rightarrow$ 发动机通知车身)
+    // 向上递归通知上层节点
     if (ParentSlot && ParentSlot->GetOwner())
     {
         if (AAssemblyNodeBase* ParentNode = Cast<AAssemblyNodeBase>(ParentSlot->GetOwner()))
@@ -111,14 +112,14 @@ void AAssemblyNodeBase::UpdateChildrenAssemblyStatus()
 void AAssemblyNodeBase::RefreshChildSlotsActivation()
 {
     // 只有当自身处于“已吸附/已安装”或“本身就是根节点”时，才激活自身的子插槽触发区
-    const bool bShouldActivateSlots = bIsRootNode || bIsAttached;
+    const bool bShouldActivateSlots = bIsRootNode || ParentSlot;
 
     for (UAssemblySlotComponent* Slot : ChildSlots)
     {
         if (Slot)
         {
             // 如果插槽已经被占用了，保持关闭；只有空闲插槽才根据激活状态开启
-            if (Slot->bIsOccupied)
+            if (Slot->OccupiedNode)
             {
                 Slot->SetSlotActive(false);
             }

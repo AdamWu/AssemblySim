@@ -25,33 +25,37 @@ protected:
     virtual void BeginPlay() override;
 
 public:
-    // ==========================================
-    // 属性配置
-    // ==========================================
-
     /** 该插槽允许接收的部件类型 Tag */
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AssemblySlotComponent")
     FGameplayTag AcceptNodeTag;
 
-    /** 是否被占用 */
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AssemblySlotComponent")
-    bool bIsOccupied = false;
-
-    /** 当前吸附在插槽上的部件指针 */
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AssemblySlotComponent")
-    TObjectPtr<AAssemblyNodeBase> CurrentOccupiedNode = nullptr;
-
-    // ==========================================
-    // 子组件 (触发区 + 预览网格)
-    // ==========================================
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AssemblySlotComponent")
     UShapeComponent* TriggerZone;
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AssemblySlotComponent")
     TObjectPtr<UStaticMeshComponent> PreviewMeshComponent;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AssemblySlotComponent")
+    /** 当前吸附在插槽上的部件指针 */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AssemblySlotComponent")
+    TObjectPtr<AAssemblyNodeBase> OccupiedNode = nullptr;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AssemblySlotComponent")
+    bool bIsLockPosition = false;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AssemblySlotComponent")
+    bool bIsLockRotation = false;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AssemblySlotComponent")
+    bool bIsLockScale = false;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AssemblySlotComponent")
     TObjectPtr<UMaterialInterface> PreviewMaterial;
+
+    // locked for special node
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AssemblySlotComponent")
+    bool bIsLocked = false;
+
+
 
     // ==========================================
     // 事件委托
@@ -63,10 +67,7 @@ public:
     UPROPERTY(BlueprintAssignable, Category = "AssemblySlotComponent")
     FOnSlotOccupiedChanged OnSlotOccupiedChanged;
 
-    // ==========================================
-    // 核心接口
-    // ==========================================
-
+public:
     /** 检查是否允许吸附指定部件 */
     UFUNCTION(BlueprintCallable, Category = "AssemblySlotComponent")
     bool CanAccept(const AAssemblyNodeBase* Node) const;

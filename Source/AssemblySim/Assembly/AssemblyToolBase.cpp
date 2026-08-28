@@ -29,7 +29,7 @@ void AAssemblyToolBase::BeginPlay()
 
 bool AAssemblyToolBase::AttachToNode(AAssemblyFastenerNode* Node)
 {
-    if (!Node->CanAcceptTool(this)) return false;
+    if (AttachedNode) return false;
 
     UE_LOG(LogTemp, Log, TEXT("AAssemblyToolBase::AttachToNode %s->%s"), *GetName(), *Node->GetName());
 
@@ -56,4 +56,11 @@ bool AAssemblyToolBase::DetachFromNode()
     AttachedNode = nullptr;
 
     return true;
+}
+
+void AAssemblyToolBase::OnClicked()
+{
+    if (AttachedNode) {
+        AttachedNode->Fasten();
+    }
 }

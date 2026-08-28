@@ -7,6 +7,7 @@
 class USphereComponent;
 class AAssemblyToolBase;
 class UWidgetComponent;
+class UTimelineComponent;
 
 UCLASS()
 class ASSEMBLYSIM_API AAssemblyFastenerNode : public AAssemblyNodeBase
@@ -20,9 +21,6 @@ protected:
 	virtual void BeginPlay() override;
 
 public:
-	// ==================== 组件与参数 ====================
-
-	/** 工具靠近的触发区域与吸附对齐参照点 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AssemblyFastenerNode")
 	UShapeComponent* TriggerZone;
 
@@ -32,19 +30,31 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AssemblyFastenerNode")
 	UWidgetComponent* WidgetComponent;
 
-	/** 匹配的工具 Tag（例如 "ScrewDriver", "Wrench"） */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AssemblyFastenerNode")
+	UTimelineComponent* TimelineComponent;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AssemblyFastenerNode")
 	FGameplayTag RequiredToolTag;
 
-	/** 是否已彻底紧固完成 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AssemblyFastenerNode")
+	UCurveFloat* FastenCurve;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AssemblyFastenerNode")
+	float TotalRotationDegrees = 360;
+
+	// cannot be detached
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AssemblyFastenerNode")
+	bool bIsCaptive = false;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AssemblyFastenerNode")
 	bool bIsFastened = false;
 
-	/** 当前挂靠的工具指针（仅做引用，非 Child 组装节点） */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AssemblyFastenerNode")
 	AAssemblyToolBase* CurrentTool = nullptr;
 
+	float LastTimelineValue = 0;
 
+public:
 	virtual bool AttachToSlot(UAssemblySlotComponent* Slot) override;
 
 	virtual bool DetachFromSlot() override;
@@ -53,9 +63,9 @@ public:
 
 	virtual bool IsSelfCompleted() { return bIsFastened; };
 
-	// ==================== 核心工具交互接口 ====================
+	virtual void UpdateChildrenAssemblyStatus();
 
-	/** 1. 校验工具匹配度 */
+
 	UFUNCTION(BlueprintCallable, Category = "AssemblyFastenerNode")
 	bool CanAcceptTool(AAssemblyToolBase* Tool) const;
 
@@ -64,6 +74,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "AssemblyFastenerNode")
 	void ReleaseTool();
+
+	UFUNCTION(BlueprintCallable, Category = "AssemblyFastenerNode")
+	void Fasten();
 
 private:
 	UFUNCTION()
@@ -74,4 +87,13 @@ private:
 	UFUNCTION()
 	void OnToolOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, 
 	                      UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
+
+	UFUNCTION()
+	void HandleTimelineUpdate(float OutputValue);
+
+	UFUNCTION()
+	void HandleTimelineFinished();
+
+	void UpdateProgress(float Progress);
 };

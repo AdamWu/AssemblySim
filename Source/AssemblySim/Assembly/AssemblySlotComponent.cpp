@@ -1,5 +1,6 @@
 #include "AssemblySlotComponent.h"
 #include "AssemblyNodeBase.h"
+#include "AssemblyFastenerNode.h"
 #include "Components/BoxComponent.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -27,17 +28,34 @@ UAssemblySlotComponent::UAssemblySlotComponent()
     {
         PreviewMaterial = MaterialFinder.Object;
     }
+
 }
 
 void UAssemblySlotComponent::BeginPlay()
 {
     Super::BeginPlay();
 
+    if (bIsLockPosition) SetUsingAbsoluteLocation(true);
+    if (bIsLockRotation) SetUsingAbsoluteRotation(true);
+    if (bIsLockScale) SetUsingAbsoluteScale(true);
+
+    // 初始自动绑定
+    if (OccupiedNode)
+    {
+        AAssemblyNodeBase* Node = OccupiedNode;
+        OccupiedNode = nullptr;
+        Node->AttachToSlot(this);
+        if (AAssemblyFastenerNode* Fastner = Cast<AAssemblyFastenerNode>(Node)) {
+            Fastner->bIsFastened = true;
+        }
+        Node->UpdateChildrenAssemblyStatus();
+    }
+
     TriggerZone = FindObject<UShapeComponent>(this, TEXT("Trigger"));
     PreviewMeshComponent = FindObject<UStaticMeshComponent>(this, TEXT("Preview"));
 
     TArray<USceneComponent*> Childen;
-    GetChildrenComponents(true, Childen);
+    GetChildrenComponents(false, Childen);
 
     for (USceneComponent* child : Childen) {
         if (child->GetName().StartsWith(TEXT("Trigger"))) TriggerZone = (UShapeComponent*)child;
@@ -65,10 +83,10 @@ void UAssemblySlotComponent::BeginPlay()
 
 bool UAssemblySlotComponent::CanAccept(const AAssemblyNodeBase* Node) const
 {
-    if (bIsOccupied || !Node) return false;
+    if (OccupiedNode || !Node) return false;
 
     // 校验 Tag 是否匹配，且确保部件没有被锁死在别处
-    return Node->NodeTag.MatchesTagExact(AcceptNodeTag) && !Node->bIsAttached;
+    return Node->NodeTag.MatchesTagExact(AcceptNodeTag) && !Node->ParentSlot;
 }
 
 void UAssemblySlotComponent::OnTriggerBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -96,7 +114,7 @@ void UAssemblySlotComponent::OnTriggerEndOverlap(UPrimitiveComponent* Overlapped
 
 void UAssemblySlotComponent::SetSlotHovered(bool bHovered, AAssemblyNodeBase* Node)
 {
-    if (bIsOccupied)
+    if (OccupiedNode)
     {
         if (PreviewMeshComponent) PreviewMeshComponent->SetVisibility(false);
         return;
@@ -121,12 +139,11 @@ void UAssemblySlotComponent::SetSlotHovered(bool bHovered, AAssemblyNodeBase* No
 
 bool UAssemblySlotComponent::OccupySlot(AAssemblyNodeBase* Node, bool bSilent)
 {
-    if (!Node || bIsOccupied) return false;
+    if (!Node || OccupiedNode) return false;
 
     UE_LOG(LogTemp, Log, TEXT("OccupySlot %s"), *AcceptNodeTag.ToString());
 
-    CurrentOccupiedNode = Node;
-    bIsOccupied = true;
+    OccupiedNode = Node;
 
     SetSlotHovered(false, nullptr);
     SetSlotActive(false);
@@ -143,12 +160,11 @@ bool UAssemblySlotComponent::OccupySlot(AAssemblyNodeBase* Node, bool bSilent)
 
 bool UAssemblySlotComponent::ClearSlot()
 {
-    if (!bIsOccupied) return false;
+    if (!OccupiedNode) return false;
 
     UE_LOG(LogTemp, Log, TEXT("ClearSlot %s"), *AcceptNodeTag.ToString());
 
-    CurrentOccupiedNode = nullptr;
-    bIsOccupied = false;
+    OccupiedNode = nullptr;
 
     SetSlotActive(true);
 

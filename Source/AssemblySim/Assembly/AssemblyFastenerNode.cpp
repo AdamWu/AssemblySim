@@ -1,29 +1,50 @@
 #include "AssemblyFastenerNode.h"
-#include "AssemblyToolBase.h"
 #include "Components/SphereComponent.h"
-#include "Blueprint/UserWidget.h"
 #include "Components/WidgetComponent.h"
+#include "Components/TimelineComponent.h"
+#include "Components/TextBlock.h"
+#include "Components/ProgressBar.h"
+#include "AssemblySlotComponent.h"
+#include "AssemblyToolBase.h"
 
 AAssemblyFastenerNode::AAssemblyFastenerNode()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
+	SnapAnchorComponent = CreateDefaultSubobject<USceneComponent>(TEXT("SnapAnchor"));
+	SnapAnchorComponent->SetupAttachment(RootComponent);
+
+	WidgetComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("Widget"));
+	WidgetComponent->SetupAttachment(RootComponent);
+	WidgetComponent->SetVisibility(false);
+
+	TriggerZone = CreateDefaultSubobject<USphereComponent>(TEXT("Trigger"));
+	TriggerZone->SetupAttachment(RootComponent);
+	TriggerZone->SetCollisionProfileName(TEXT("Trigger"));
+	//TriggerZone->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	TimelineComponent = CreateDefaultSubobject<UTimelineComponent>(TEXT("TimelineComponent"));
 }
 
 void AAssemblyFastenerNode::BeginPlay()
 {
 	Super::BeginPlay();
 
-	SnapAnchorComponent = FindObject<USceneComponent>(this, TEXT("SnapAnchor"));
-
-	WidgetComponent = FindObject<UWidgetComponent>(this, TEXT("Widget"));
-	WidgetComponent->SetVisibility(false);
-
-	TriggerZone = FindObject<UShapeComponent>(this, TEXT("Trigger"));
-	TriggerZone->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-
 	TriggerZone->OnComponentBeginOverlap.AddDynamic(this, &AAssemblyFastenerNode::OnToolOverlapBegin);
 	TriggerZone->OnComponentEndOverlap.AddDynamic(this, &AAssemblyFastenerNode::OnToolOverlapEnd);
+
+	if (FastenCurve)
+	{
+		FOnTimelineFloat UpdateDelegate;
+		UpdateDelegate.BindUFunction(this, FName("HandleTimelineUpdate"));
+		TimelineComponent->AddInterpFloat(FastenCurve, UpdateDelegate);
+
+		FOnTimelineEvent FinishedDelegate;
+		FinishedDelegate.BindUFunction(this, FName("HandleTimelineFinished"));
+		TimelineComponent->SetTimelineFinishedFunc(FinishedDelegate);
+
+		TimelineComponent->SetLooping(false);
+	}
 }
 
 
@@ -47,12 +68,27 @@ bool AAssemblyFastenerNode::DetachFromSlot()
 bool AAssemblyFastenerNode::CanDetachNode() const
 {
 	bool ret = Super::CanDetachNode();
-	return ret && !bIsFastened && !CurrentTool;
+	return ret && !bIsFastened && !CurrentTool && !bIsCaptive;
+}
+
+
+void AAssemblyFastenerNode::UpdateChildrenAssemblyStatus()
+{
+	// refresh children status
+	Super::UpdateChildrenAssemblyStatus();
+
+	// lock children when fastened
+	for (UAssemblySlotComponent* Slot : ChildSlots)
+	{
+		if (Slot) Slot->bIsLocked = bIsFastened;
+	}
 }
 
 bool AAssemblyFastenerNode::CanAcceptTool(AAssemblyToolBase* Tool) const
 {
-	return !bIsFastened && CurrentTool == nullptr && Tool;
+	if (CurrentTool || !Tool) return false;
+
+	return Tool->ToolTag.MatchesTagExact(RequiredToolTag);
 }
 
 void AAssemblyFastenerNode::UseTool(AAssemblyToolBase* Tool)
@@ -60,6 +96,7 @@ void AAssemblyFastenerNode::UseTool(AAssemblyToolBase* Tool)
 	CurrentTool = Tool;
 	SetHighlightEnabled(true);
 
+	UpdateProgress(bIsFastened ? 1 : 0);
 	WidgetComponent->SetVisibility(true);
 }
 
@@ -72,6 +109,18 @@ void AAssemblyFastenerNode::ReleaseTool()
 }
 
 
+void AAssemblyFastenerNode::Fasten()
+{
+	if (TimelineComponent->IsPlaying()) return;
+
+	UE_LOG(LogTemp, Log, TEXT("Fasten %s"), *GetName());
+
+	LastTimelineValue = 0;
+	TimelineComponent->PlayFromStart();
+
+	UpdateProgress(bIsFastened ? 1 : 0);
+}
+
 void AAssemblyFastenerNode::OnToolOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, 
                                                 UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, 
                                                 bool bFromSweep, const FHitResult& SweepResult)
@@ -79,16 +128,60 @@ void AAssemblyFastenerNode::OnToolOverlapBegin(UPrimitiveComponent* OverlappedCo
 	AAssemblyToolBase* Tool = Cast<AAssemblyToolBase>(OtherActor);
 	if (Tool && CanAcceptTool(Tool))
 	{
-		// 触碰高亮提示
-		MeshComponent->SetRenderCustomDepth(true);
-		// 设置 Stencil 值（可以用不同数字代表不同颜色的外发光，如 1=绿色高亮, 2=黄色预警）
-		MeshComponent->SetCustomDepthStencilValue(1);
+		SetHighlightEnabled(true);
 	}
 }
 
 void AAssemblyFastenerNode::OnToolOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, 
                                               UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
-	// 取消高亮
-	MeshComponent->SetRenderCustomDepth(false);
+	SetHighlightEnabled(false);
+}
+
+
+void AAssemblyFastenerNode::HandleTimelineUpdate(float OutputValue)
+{
+	float DeltaValue = OutputValue - LastTimelineValue;
+	DeltaValue *= (bIsFastened ? -1 : 1);
+	LastTimelineValue = OutputValue;
+
+	if (FMath::IsNearlyZero(DeltaValue)) return;
+
+	FTransform SnapToRoot = SnapAnchorComponent->GetRelativeTransform();	
+	FVector AxisInRootSpace = SnapToRoot.TransformVectorNoScale(FVector::UpVector).GetSafeNormal();
+
+	float DeltaAngle = DeltaValue * TotalRotationDegrees;
+	FQuat DeltaQuat = FQuat(AxisInRootSpace, FMath::DegreesToRadians(DeltaAngle));
+
+	FQuat CurrentQuat = RootComponent->GetRelativeRotation().Quaternion();
+	FVector CurrentLocation = RootComponent->GetRelativeLocation();
+
+	FQuat Quat = CurrentQuat * DeltaQuat;
+
+	RootComponent->SetRelativeRotation(Quat);
+}
+
+void AAssemblyFastenerNode::HandleTimelineFinished()
+{
+	bIsFastened = !bIsFastened;
+
+	UE_LOG(LogTemp, Log, TEXT("HandleTimelineFinished %s"), *GetName());
+
+	UpdateProgress(bIsFastened ? 1 : 0);
+
+	// refresh children status
+	UpdateChildrenAssemblyStatus();
+}
+
+
+void AAssemblyFastenerNode::UpdateProgress(float Progress)
+{
+	UUserWidget* UserWidget = WidgetComponent->GetWidget();
+	if (UserWidget) {
+		FString Str = FString::Printf(TEXT("%d%%"), (int)(Progress * 100));
+		UTextBlock* Label = Cast<UTextBlock>(UserWidget->GetWidgetFromName(TEXT("TextBlock")));
+		if (Label) Label->SetText(FText::FromString(Str));
+		UProgressBar* ProgressBar = Cast<UProgressBar>(UserWidget->GetWidgetFromName(TEXT("ProgressBar")));
+		if (ProgressBar) ProgressBar->SetPercent(Progress);
+	}
 }
