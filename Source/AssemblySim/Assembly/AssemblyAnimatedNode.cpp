@@ -30,7 +30,17 @@ void AAssemblyAnimatedNode::BeginPlay()
 	}
 
 	InitPivotTransform = RootComponent->GetRelativeTransform();
-	TargetPivotTransform = InitPivotTransform * TargetOffsetTransform;
+	//TargetPivotTransform = InitPivotTransform * TargetOffsetTransform;
+
+	const auto& Q = InitPivotTransform.GetRotation(); 
+	const FVector InitLocation = InitPivotTransform.GetLocation();
+	const FQuat InitRotation = InitPivotTransform.GetRotation();
+	const FVector InitScale = InitPivotTransform.GetScale3D();
+	TargetPivotTransform.SetLocation(InitLocation + InitRotation.RotateVector(TargetOffsetTransform.GetLocation()));
+	TargetPivotTransform.SetRotation(InitRotation * TargetOffsetTransform.GetRotation());
+	TargetPivotTransform.SetScale3D(InitScale * TargetOffsetTransform.GetScale3D());
+
+	UE_LOG(LogTemp, Log, TEXT("BeginPlay %s"), *GetName());
 }
 
 void AAssemblyAnimatedNode::Play()
@@ -39,8 +49,8 @@ void AAssemblyAnimatedNode::Play()
 
 	UE_LOG(LogTemp, Log, TEXT("Play %s"), *GetName());
 
-	if (bIsFinished) TimelineComponent->ReverseFromEnd();
-	else TimelineComponent->PlayFromStart();
+	if (bIsFinished) TimelineComponent->PlayFromStart();
+	else TimelineComponent->ReverseFromEnd();
 
 }
 
