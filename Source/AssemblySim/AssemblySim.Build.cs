@@ -11,9 +11,14 @@ public class AssemblySim : ModuleRules
 	
 		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "GameplayTags"});
 
-		PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore", "UMG" });
+		PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore", "UMG", "UnrealEd" });
 
         PublicIncludePaths.Add("AssemblySim");
+
+        if (Target.Type == TargetType.Editor)
+        {
+            PrivateDependencyModuleNames.Add("UnrealEd");
+        }
 
         // Uncomment if you are using Slate UI
         // PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });

@@ -6,6 +6,7 @@
 #include "AssemblyToolBase.h"
 #include "AssemblyFastenerNode.h"
 #include "AssemblyPlayerController.h"
+#include "AssemblyGameMode.h"
 
 AAssemblyInteractionManager::AAssemblyInteractionManager()
 {
@@ -31,6 +32,8 @@ void AAssemblyInteractionManager::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 	if (!PC || !HeldActor) return;
 
+	AAssemblyGameMode* GameMode = Cast<AAssemblyGameMode>(UGameplayStatics::GetGameMode(GetWorld()));
+
 	AAssemblyNodeBase* HitNode = Cast<AAssemblyNodeBase>(HeldActor);
 	AAssemblyToolBase* HitTool = Cast<AAssemblyToolBase>(HeldActor);
 
@@ -41,20 +44,38 @@ void AAssemblyInteractionManager::Tick(float DeltaTime)
 	if (HeldActorDetachLocked) {
 
 		FHitResult HitResult;
-		if (PC->GetHitResultUnderCursor(ECC_Visibility, false, HitResult))
+		if (PC->GetHitResultUnderCursor(ECC_Visibility, true, HitResult))
 		{
 			float DragDistance = FVector::Distance(HitResult.Location, DragOrigin);
 			UE_LOG(LogTemp, Log, TEXT("DragDistance %f"), DragDistance);
 			if (DragDistance > 10)
 			{
 				HeldActorDetachLocked = false;
+				HeldActorDetachTriggered = true;
+
 				// node
-				if (HitNode && HitNode->ParentSlot) {
-					HitNode->DetachFromSlot();
+				if (HitNode && HitNode->ParentSlot) 
+				{
+					if (GameMode->OnCheckStep(EAssemblyAction::Snap, HitNode->NodeID, HitNode->ParentSlot->SlotID))
+					{
+						HitNode->DetachFromSlot();
+					}
+					else {
+						HitNode->SetActorLocation(DragActorLocation);
+						HeldActor = nullptr;
+					}
+
 				}
 				// tool
 				if (HitTool && HitTool->AttachedNode) {
-					HitTool->DetachFromNode();
+					if (GameMode->OnCheckStep(EAssemblyAction::Snap, HitTool->ToolID, HitTool->AttachedNode->NodeID))
+					{
+						HitTool->DetachFromNode();
+					}
+					else {
+						HitTool->SetActorLocation(DragActorLocation);
+						HeldActor = nullptr;
+					}
 				}
 			}
 		}
@@ -69,9 +90,15 @@ void AAssemblyInteractionManager::Tick(float DeltaTime)
 		//HeldActor->SetActorLocation(NewLocation);
 
 		FCollisionQueryParams QueryParams;
+		QueryParams.bTraceComplex = true;
 		QueryParams.AddIgnoredActor(HeldActor);
 		FHitResult HitResult;
-		bool bHitOther = GetWorld()->LineTraceSingleByChannel(HitResult, WorldLoc, WorldLoc + WorldDir * 10000, ECC_Visibility, QueryParams);
+		bool bHitOther = GetWorld()->LineTraceSingleByChannel(HitResult, WorldLoc, WorldLoc + WorldDir * DragBaseZ, ECC_Visibility, QueryParams);
+		if (bHitOther)
+		{
+			HeldActor->SetActorLocation(HitResult.Location);
+			return;
+		}
 
 		FVector CameraLocation = PC->PlayerCameraManager->GetCameraLocation();
 		FRotator CameraRotation = PC->PlayerCameraManager->GetCameraRotation();
@@ -83,13 +110,7 @@ void AAssemblyInteractionManager::Tick(float DeltaTime)
 		if (!FMath::IsNearlyZero(Denominator))
 		{
 			float T = FVector::DotProduct(DynamicPlaneAnchor - WorldLoc, DynamicPlaneNormal) / Denominator;
-			if (bHitOther)
-			{
-				FTransform CameraTransform(CameraRotation, CameraLocation);
-				FVector CameraLocalHitPoint = CameraTransform.InverseTransformPosition(HitResult.Location);
-				//UE_LOG(LogTemp, Log, TEXT("T %f %f"), T, CameraLocalHitPoint.X);
-				T = FMath::Min(T, CameraLocalHitPoint.X);
-			}
+
 			FVector CurrentHitLocation = WorldLoc + WorldDir * T;
 			FVector CurrentWorldGrabOffset = CameraRotation.RotateVector(DragOffset);
 			FVector TargetLocation = CurrentHitLocation + CurrentWorldGrabOffset;
@@ -105,7 +126,7 @@ void AAssemblyInteractionManager::OnMouseLeftPressed()
 
 	FHitResult HitResult;
 	AActor* HitActor = nullptr;
-	if (PC->GetHitResultUnderCursor(ECC_Visibility, false, HitResult))
+	if (PC->GetHitResultUnderCursor(ECC_Visibility, true, HitResult))
 	{
 		HitActor = HitResult.GetActor();
 	}
@@ -118,6 +139,8 @@ void AAssemblyInteractionManager::OnMouseLeftPressed()
 	if (HitNode && HitNode->ParentSlot || HitTool && HitTool->AttachedNode) {
 		HeldActorDetachLocked = true;
 	}
+	
+	HeldActorDetachTriggered = false;
 
 	HeldActor = HitActor;
 
@@ -125,11 +148,14 @@ void AAssemblyInteractionManager::OnMouseLeftPressed()
 	FVector CameraLocation = PC->PlayerCameraManager->GetCameraLocation();
 	FRotator CameraRotation = PC->PlayerCameraManager->GetCameraRotation();
 	FTransform CameraTransform(CameraRotation, CameraLocation);
+	FVector CameraLocalActorPoint = CameraTransform.InverseTransformPosition(HeldActor->GetActorLocation());
 	FVector CameraLocalHitPoint = CameraTransform.InverseTransformPosition(HitResult.Location);
+	DragBaseZ = CameraLocalActorPoint.X;
 	DragZ = CameraLocalHitPoint.X;
 	DragOrigin = HitResult.Location;
 	FVector Offset = HeldActor->GetActorLocation() - HitResult.Location;
 	DragOffset = CameraRotation.UnrotateVector(Offset);
+	DragActorLocation = HeldActor->GetActorLocation();
 }
 
 void AAssemblyInteractionManager::OnMouseLeftReleased()
@@ -139,14 +165,18 @@ void AAssemblyInteractionManager::OnMouseLeftReleased()
 
 	if (!HeldActor) return;
 
+	AAssemblyGameMode* GameMode = Cast<AAssemblyGameMode>(UGameplayStatics::GetGameMode(GetWorld()));
+
 	if (AAssemblyNodeBase* HitNode = Cast<AAssemblyNodeBase>(HeldActor)) {
 		UAssemblySlotComponent* TargetSlot = FindOverlappingSlot(HitNode);
 		if (TargetSlot && TargetSlot->CanAccept(HitNode))
 		{
-			HitNode->AttachToSlot(TargetSlot);
+			if (GameMode->OnCheckStep(EAssemblyAction::Snap, HitNode->NodeID, TargetSlot->SlotID))
+				HitNode->AttachToSlot(TargetSlot);
 		}
 		else {
-			HitNode->OnClicked();
+			if (GameMode->OnCheckStep(EAssemblyAction::Click, HitNode->NodeID, NAME_None))
+				HitNode->OnClicked();
 		}
 	}
 
@@ -155,10 +185,12 @@ void AAssemblyInteractionManager::OnMouseLeftReleased()
 		AAssemblyFastenerNode* TargetNode = FindOverlappingFastenerNode(HitTool);
 		if (TargetNode && TargetNode->CanAcceptTool(HitTool))
 		{
-			HitTool->AttachToNode(TargetNode);
+			if (GameMode->OnCheckStep(EAssemblyAction::Snap, HitTool->ToolID, TargetNode->NodeID))
+				HitTool->AttachToNode(TargetNode);
 		}
-		else {
-			HitTool->OnClicked();
+		else if(HitTool->AttachedNode){
+			if (GameMode->OnCheckStep(EAssemblyAction::Click, HitTool->ToolID, NAME_None))
+				HitTool->OnClicked();
 		}
 	}
 

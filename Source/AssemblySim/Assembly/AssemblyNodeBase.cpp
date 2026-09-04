@@ -25,10 +25,8 @@ void AAssemblyNodeBase::BeginPlay()
 }
 
 
-bool AAssemblyNodeBase::AttachToSlot(UAssemblySlotComponent* Slot)
+void AAssemblyNodeBase::AttachToSlot(UAssemblySlotComponent* Slot)
 {
-    if (Slot->OccupiedNode) return false;
-
     UE_LOG(LogTemp, Log, TEXT("AttachToSlot %s->%s"), *NodeTag.ToString(), *Slot->AcceptNodeTag.ToString());
 
     Slot->OccupySlot(this);
@@ -38,13 +36,10 @@ bool AAssemblyNodeBase::AttachToSlot(UAssemblySlotComponent* Slot)
     ParentSlot = Slot;
 
     RefreshChildSlotsActivation();
-    return true;
 }
 
-bool AAssemblyNodeBase::DetachFromSlot()
+void AAssemblyNodeBase::DetachFromSlot()
 {
-    if (!ParentSlot) return false;
-
     UE_LOG(LogTemp, Log, TEXT("DetachFromSlot %s->%s"), *NodeTag.ToString(), *ParentSlot->AcceptNodeTag.ToString());
 
     ParentSlot->ClearSlot();
@@ -54,7 +49,6 @@ bool AAssemblyNodeBase::DetachFromSlot()
     ParentSlot = nullptr;
 
     RefreshChildSlotsActivation();
-    return true;
 }
 
 bool AAssemblyNodeBase::CanDetachNode() const

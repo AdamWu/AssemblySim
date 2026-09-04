@@ -25,6 +25,10 @@ protected:
     virtual void BeginPlay() override;
 
 public:
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AssemblySlotComponent")
+    FName SlotID;
+
     /** 该插槽允许接收的部件类型 Tag */
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AssemblySlotComponent")
     FGameplayTag AcceptNodeTag;
@@ -47,6 +51,9 @@ public:
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AssemblySlotComponent")
     bool bIsLockScale = false;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AssemblySlotComponent")
+    TObjectPtr<AAssemblyNodeBase> ParentNode = nullptr;
 
     UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AssemblySlotComponent")
     TObjectPtr<UMaterialInterface> PreviewMaterial;

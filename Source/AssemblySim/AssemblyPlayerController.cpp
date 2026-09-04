@@ -1,4 +1,5 @@
 #include "AssemblyPlayerController.h"
+#include "GameFramework/FloatingPawnMovement.h"
 
 AAssemblyPlayerController::AAssemblyPlayerController()
 {
@@ -14,6 +15,15 @@ void AAssemblyPlayerController::BeginPlay()
 
 	// 2. 初始化输入模式：显示鼠标且不锁定在视口中心
 	SetupAssemblyInputMode();
+
+	APawn* CurrentPawn = GetPawn();
+	if (CurrentPawn)
+	{
+		CurrentPawn->SetActorEnableCollision(false);
+		if (UFloatingPawnMovement* MoveCmp = Cast<UFloatingPawnMovement>(CurrentPawn->GetMovementComponent())) {
+			MoveCmp->MaxSpeed = 50;
+		}
+	}
 }
 
 void AAssemblyPlayerController::SetupAssemblyInputMode()

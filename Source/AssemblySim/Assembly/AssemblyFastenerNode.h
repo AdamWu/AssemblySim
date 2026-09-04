@@ -47,7 +47,7 @@ public:
 	bool bIsCaptive = false;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AssemblyFastenerNode")
-	bool bIsFastened = false;
+	bool bIsClosed = false;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AssemblyFastenerNode")
 	AAssemblyToolBase* CurrentTool = nullptr;
@@ -55,13 +55,13 @@ public:
 	float LastTimelineValue = 0;
 
 public:
-	virtual bool AttachToSlot(UAssemblySlotComponent* Slot) override;
+	virtual void AttachToSlot(UAssemblySlotComponent* Slot) override;
 
-	virtual bool DetachFromSlot() override;
+	virtual void DetachFromSlot() override;
 
 	virtual bool CanDetachNode() const;
 
-	virtual bool IsSelfCompleted() { return bIsFastened; };
+	virtual bool IsSelfCompleted() { return bIsClosed; };
 
 	virtual void UpdateChildrenAssemblyStatus();
 
@@ -78,6 +78,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "AssemblyFastenerNode")
 	void Fasten();
 
+	virtual void OnConvertFromActor(AActor* Actor);
 private:
 	UFUNCTION()
 	void OnToolOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, 

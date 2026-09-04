@@ -35,6 +35,13 @@ void UAssemblySlotComponent::BeginPlay()
 {
     Super::BeginPlay();
 
+    if (AAssemblyNodeBase* NodeBase = Cast<AAssemblyNodeBase>(GetOwner()))
+    {
+        ParentNode = NodeBase; 
+        FString Str = FString::Printf(TEXT("%s_%s"), *ParentNode->NodeID.ToString(), *SlotID.ToString());
+        SlotID = FName(*Str);
+    }
+
     if (bIsLockPosition) SetUsingAbsoluteLocation(true);
     if (bIsLockRotation) SetUsingAbsoluteRotation(true);
     if (bIsLockScale) SetUsingAbsoluteScale(true);
@@ -46,7 +53,7 @@ void UAssemblySlotComponent::BeginPlay()
         OccupiedNode = nullptr;
         Node->AttachToSlot(this);
         if (AAssemblyFastenerNode* Fastner = Cast<AAssemblyFastenerNode>(Node)) {
-            Fastner->bIsFastened = true;
+            Fastner->bIsClosed = true;
         }
         Node->UpdateChildrenAssemblyStatus();
     }

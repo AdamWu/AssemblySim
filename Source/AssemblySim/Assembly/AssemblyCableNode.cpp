@@ -1,20 +1,23 @@
-#include "AssemblyAnimatedNode.h"
+#include "AssemblyCableNode.h"
 #include "Components/SphereComponent.h"
 #include "Components/WidgetComponent.h"
 #include "Components/TimelineComponent.h"
 #include "AssemblySlotComponent.h"
 #include "AssemblyToolBase.h"
 
-AAssemblyAnimatedNode::AAssemblyAnimatedNode()
+AAssemblyCableNode::AAssemblyCableNode()
 {
 	PrimaryActorTick.bCanEverTick = false;
+
+	FixedAnchorComponent = CreateDefaultSubobject<USceneComponent>(TEXT("FixedAnchor"));
+	FixedAnchorComponent->SetupAttachment(RootComponent);
 
 	RootComponent->SetMobility(EComponentMobility::Movable);
 
 	TimelineComponent = CreateDefaultSubobject<UTimelineComponent>(TEXT("TimelineComponent"));
 }
 
-void AAssemblyAnimatedNode::BeginPlay()
+void AAssemblyCableNode::BeginPlay()
 {
 	Super::BeginPlay();
 
@@ -32,20 +35,17 @@ void AAssemblyAnimatedNode::BeginPlay()
 	}
 
 	InitPivotTransform = RootComponent->GetRelativeTransform();
-	TargetPivotTransform = TargetOffsetTransform * InitPivotTransform;
 
-	const auto& Q = InitPivotTransform.GetRotation();
-	const FVector InitLocation = InitPivotTransform.GetLocation();
-	const FQuat InitRotation = InitPivotTransform.GetRotation();
-	const FVector InitScale = InitPivotTransform.GetScale3D();
-	//TargetPivotTransform.SetLocation(InitLocation + InitRotation.RotateVector(TargetOffsetTransform.GetLocation()));
-	//TargetPivotTransform.SetRotation(InitRotation * TargetOffsetTransform.GetRotation());
-	//TargetPivotTransform.SetScale3D(InitScale * TargetOffsetTransform.GetScale3D());
+	FTransform AnchorWorldTransform = FixedAnchorComponent->GetComponentTransform();
+	FTransform NewAnchorWorldTransform = TargetOffsetTransform * AnchorWorldTransform;
+
+	FTransform AnchorLocalTransform = FixedAnchorComponent->GetRelativeTransform();
+	TargetPivotTransform = AnchorLocalTransform.Inverse() * NewAnchorWorldTransform;
 
 	UE_LOG(LogTemp, Log, TEXT("BeginPlay %s"), *GetName());
 }
 
-void AAssemblyAnimatedNode::Play()
+void AAssemblyCableNode::Play()
 {
 	if (TimelineComponent->IsPlaying()) return;
 
@@ -57,7 +57,7 @@ void AAssemblyAnimatedNode::Play()
 }
 
 
-void AAssemblyAnimatedNode::OnClicked()
+void AAssemblyCableNode::OnClicked()
 {
 	if (ParentSlot && ParentSlot->bIsLocked) return;
 
@@ -66,7 +66,7 @@ void AAssemblyAnimatedNode::OnClicked()
 	Play();
 }
 
-void AAssemblyAnimatedNode::HandleTimelineUpdate(float OutputValue)
+void AAssemblyCableNode::HandleTimelineUpdate(float OutputValue)
 {
 
 	FTransform CurrentTransform;
@@ -75,7 +75,7 @@ void AAssemblyAnimatedNode::HandleTimelineUpdate(float OutputValue)
 	RootComponent->SetRelativeTransform(CurrentTransform);
 }
 
-void AAssemblyAnimatedNode::HandleTimelineFinished()
+void AAssemblyCableNode::HandleTimelineFinished()
 {
 	bIsClosed = !bIsClosed;
 

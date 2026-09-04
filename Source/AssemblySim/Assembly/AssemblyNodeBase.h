@@ -31,6 +31,9 @@ public:
     TObjectPtr<UStaticMeshComponent> MeshComponent;
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AssemblyNodeBase")
+    FName NodeID;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AssemblyNodeBase")
     FGameplayTag NodeTag;
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AssemblyNodeBase")
@@ -49,10 +52,10 @@ public:
     bool IsCompleted() { return IsSelfCompleted() && bIsAllChildrenAssembled; };
 
     UFUNCTION(BlueprintCallable, Category = "AssemblyNodeBase")
-    virtual bool AttachToSlot(UAssemblySlotComponent* Slot);
+    virtual void AttachToSlot(UAssemblySlotComponent* Slot);
 
     UFUNCTION(BlueprintCallable, Category = "AssemblyNodeBase")
-    virtual bool DetachFromSlot();
+    virtual void DetachFromSlot();
 
     UFUNCTION(BlueprintCallable, Category = "AssemblyNodeBase")
     virtual bool CanDetachNode() const;
@@ -74,6 +77,8 @@ public:
         // 设置 Stencil 值（可以用不同数字代表不同颜色的外发光，如 1=绿色高亮, 2=黄色预警）
         MeshComponent->SetCustomDepthStencilValue(1);
     };
+
+    virtual void OnConvertFromActor(AActor* Actor) {}
 
 protected:
     /** 根据安装状态自动开启/关闭身上插槽的碰撞触发区 */

@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "AssemblyNodeBase.h"
-#include "AssemblyAnimatedNode.generated.h"
+#include "AssemblyCableNode.generated.h"
 
 class USphereComponent;
 class AAssemblyToolBase;
@@ -10,27 +10,30 @@ class UWidgetComponent;
 class UTimelineComponent;
 
 UCLASS()
-class ASSEMBLYSIM_API AAssemblyAnimatedNode : public AAssemblyNodeBase
+class ASSEMBLYSIM_API AAssemblyCableNode : public AAssemblyNodeBase
 {
 	GENERATED_BODY()
 
 public:
-	AAssemblyAnimatedNode();
+	AAssemblyCableNode();
 
 protected:
 	virtual void BeginPlay() override;
 
 public:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AssemblyAnimatedNode")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AssemblyCableNode")
 	UTimelineComponent* TimelineComponent;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AssemblyAnimatedNode")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AssemblyCableNode")
+	USceneComponent* FixedAnchorComponent;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AssemblyCableNode")
 	UCurveFloat* Curve;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AssemblyAnimatedNode")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AssemblyCableNode")
 	FTransform TargetOffsetTransform;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AssemblyAnimatedNode")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AssemblyCableNode")
 	bool bIsClosed = true;
 
 public:
@@ -38,7 +41,7 @@ public:
 
 	virtual bool IsSelfCompleted() { return bIsClosed; };
 
-	UFUNCTION(BlueprintCallable, Category = "AssemblyAnimatedNode")
+	UFUNCTION(BlueprintCallable, Category = "AssemblyCableNode")
 	void Play();
 
 private:

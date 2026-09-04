@@ -30,7 +30,10 @@ public:
     UStaticMeshComponent* MeshComponent;
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AssemblyToolBase")
-    USceneComponent* AnchorComponent;
+    USceneComponent* SnapAnchorComponent;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AssemblyToolBase")
+    FName ToolID;
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AssemblyToolBase")
     FGameplayTag ToolTag;
@@ -40,10 +43,10 @@ public:
 
 public:
     UFUNCTION(BlueprintCallable, Category = "AssemblyToolBase")
-    bool AttachToNode(AAssemblyFastenerNode* Node);
+    void AttachToNode(AAssemblyFastenerNode* Node);
 
     UFUNCTION(BlueprintCallable, Category = "AssemblyToolBase")
-    bool DetachFromNode();
+    void DetachFromNode();
 
     UFUNCTION(BlueprintCallable, Category = "AssemblyToolBase")
     void OnClicked();

@@ -28,9 +28,11 @@ protected:
 	UPROPERTY()
 	AActor* HeldActor = nullptr;
 
-	UPROPERTY()
 	bool HeldActorDetachLocked = true;
+	bool HeldActorDetachTriggered = false;
 
+	FVector DragActorLocation;
+	float DragBaseZ = 0.0f;
 	float DragZ = 0.0f;
 	FVector DragOrigin;
 	FVector DragOffset;

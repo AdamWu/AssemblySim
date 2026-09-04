@@ -48,27 +48,25 @@ void AAssemblyFastenerNode::BeginPlay()
 }
 
 
-bool AAssemblyFastenerNode::AttachToSlot(UAssemblySlotComponent* Slot)
+void AAssemblyFastenerNode::AttachToSlot(UAssemblySlotComponent* Slot)
 {
-	bool ret = Super::AttachToSlot(Slot);
+	Super::AttachToSlot(Slot);
 
 	TriggerZone->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-	return ret;
 }
 
 
-bool AAssemblyFastenerNode::DetachFromSlot()
+void AAssemblyFastenerNode::DetachFromSlot()
 {
-	bool ret = Super::DetachFromSlot();
+	Super::DetachFromSlot();
 
 	TriggerZone->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	return ret;
 }
 
 bool AAssemblyFastenerNode::CanDetachNode() const
 {
 	bool ret = Super::CanDetachNode();
-	return ret && !bIsFastened && !CurrentTool && !bIsCaptive;
+	return ret && !bIsClosed && !CurrentTool && !bIsCaptive;
 }
 
 
@@ -80,7 +78,7 @@ void AAssemblyFastenerNode::UpdateChildrenAssemblyStatus()
 	// lock children when fastened
 	for (UAssemblySlotComponent* Slot : ChildSlots)
 	{
-		if (Slot) Slot->bIsLocked = bIsFastened;
+		if (Slot) Slot->bIsLocked = bIsClosed;
 	}
 }
 
@@ -96,7 +94,7 @@ void AAssemblyFastenerNode::UseTool(AAssemblyToolBase* Tool)
 	CurrentTool = Tool;
 	SetHighlightEnabled(true);
 
-	UpdateProgress(bIsFastened ? 1 : 0);
+	UpdateProgress(bIsClosed ? 1 : 0);
 	WidgetComponent->SetVisibility(true);
 }
 
@@ -118,7 +116,7 @@ void AAssemblyFastenerNode::Fasten()
 	LastTimelineValue = 0;
 	TimelineComponent->PlayFromStart();
 
-	UpdateProgress(bIsFastened ? 1 : 0);
+	UpdateProgress(bIsClosed ? 1 : 0);
 }
 
 void AAssemblyFastenerNode::OnToolOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, 
@@ -142,7 +140,7 @@ void AAssemblyFastenerNode::OnToolOverlapEnd(UPrimitiveComponent* OverlappedComp
 void AAssemblyFastenerNode::HandleTimelineUpdate(float OutputValue)
 {
 	float DeltaValue = OutputValue - LastTimelineValue;
-	DeltaValue *= (bIsFastened ? -1 : 1);
+	DeltaValue *= (bIsClosed ? -1 : 1);
 	LastTimelineValue = OutputValue;
 
 	if (FMath::IsNearlyZero(DeltaValue)) return;
@@ -163,11 +161,11 @@ void AAssemblyFastenerNode::HandleTimelineUpdate(float OutputValue)
 
 void AAssemblyFastenerNode::HandleTimelineFinished()
 {
-	bIsFastened = !bIsFastened;
+	bIsClosed = !bIsClosed;
 
 	UE_LOG(LogTemp, Log, TEXT("HandleTimelineFinished %s"), *GetName());
 
-	UpdateProgress(bIsFastened ? 1 : 0);
+	UpdateProgress(bIsClosed ? 1 : 0);
 
 	// refresh children status
 	UpdateChildrenAssemblyStatus();
@@ -184,4 +182,21 @@ void AAssemblyFastenerNode::UpdateProgress(float Progress)
 		UProgressBar* ProgressBar = Cast<UProgressBar>(UserWidget->GetWidgetFromName(TEXT("ProgressBar")));
 		if (ProgressBar) ProgressBar->SetPercent(Progress);
 	}
+}
+
+
+void AAssemblyFastenerNode::OnConvertFromActor(AActor* Actor)
+{
+	UStaticMesh* Mesh = MeshComponent->GetStaticMesh();
+	if (!Mesh) return;
+
+	const FBoxSphereBounds& Bounds = Mesh->GetBounds();
+
+	if (USphereComponent* SphereComp = Cast<USphereComponent>(TriggerZone)) {
+
+		SphereComp->SetRelativeLocation(Bounds.Origin);
+		SphereComp->SetSphereRadius(Bounds.SphereRadius);
+	}
+
+	
 }
