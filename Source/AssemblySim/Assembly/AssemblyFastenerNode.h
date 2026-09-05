@@ -40,6 +40,12 @@ public:
 	UCurveFloat* FastenCurve;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AssemblyFastenerNode")
+	float CurveDuration = 1.0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AssemblyFastenerNode")
+	float CurveDegrees = 360;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AssemblyFastenerNode")
 	float TotalRotationDegrees = 360;
 
 	// cannot be detached

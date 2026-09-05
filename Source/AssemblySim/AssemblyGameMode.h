@@ -26,6 +26,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AssemblyGameMode")
 	UDataTable* SOPDataTable;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AssemblyGameMode")
+	bool bIsExamMode = false;
+
 	/** 获取当前正在执行的步骤数据 */
 	UFUNCTION(BlueprintPure, Category = "AssemblyGameMode")
 	bool GetCurrentStepData(FAssemblyStepData& OutStepData) const;

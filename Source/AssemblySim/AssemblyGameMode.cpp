@@ -81,6 +81,8 @@ bool AAssemblyGameMode::GetCurrentStepData(FAssemblyStepData& OutStepData) const
 
 bool AAssemblyGameMode::OnCheckStep(EAssemblyAction Action, FName TargetA, FName TargetB)
 {
+	if (bIsExamMode) return true;
+
 	FAssemblyStepData CurrentStep;
 	if (!GetCurrentStepData(CurrentStep))
 	{

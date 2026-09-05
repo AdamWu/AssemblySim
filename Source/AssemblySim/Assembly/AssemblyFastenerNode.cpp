@@ -44,6 +44,7 @@ void AAssemblyFastenerNode::BeginPlay()
 		TimelineComponent->SetTimelineFinishedFunc(FinishedDelegate);
 
 		TimelineComponent->SetLooping(false);
+		TimelineComponent->SetPlayRate(1.0f / CurveDuration);
 	}
 }
 
