@@ -92,7 +92,7 @@ bool AAssemblyGameMode::OnCheckStep(EAssemblyAction Action, FName TargetA, FName
 	if (CurrentStep.TargetA != TargetA || CurrentStep.TargetB != TargetB)
 	{
 		FText ErrorMsg = FText::FromString(TEXT("零件或装配槽位不正确！"));
-		UE_LOG(LogTemp, Warning, TEXT("error target"));
+		UE_LOG(LogTemp, Warning, TEXT("error target！ %s"), *CurrentStep.Desc);
 
 		//OnSOPStepFailed.Broadcast(ErrorMsg, CurrentStep.ErrorPenaltyScore);
 		return false;

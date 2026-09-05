@@ -36,11 +36,23 @@ void AAssemblyCableNode::BeginPlay()
 
 	InitPivotTransform = RootComponent->GetRelativeTransform();
 
+	// 1. 计算 Anchor 在世界空间下的新 Transform
 	FTransform AnchorWorldTransform = FixedAnchorComponent->GetComponentTransform();
 	FTransform NewAnchorWorldTransform = TargetOffsetTransform * AnchorWorldTransform;
 
-	FTransform AnchorLocalTransform = FixedAnchorComponent->GetRelativeTransform();
-	TargetPivotTransform = AnchorLocalTransform.Inverse() * NewAnchorWorldTransform;
+	// 2. 计算 Root 在世界空间下的新 Transform
+	FTransform AnchorInRootSpace = FixedAnchorComponent->GetRelativeTransform();
+	FTransform NewRootWorldTransform = AnchorInRootSpace.Inverse() * NewAnchorWorldTransform;
+
+	// 3. 自动适配：如果有 Parent，转回 Parent Space；如果没有 Parent，直接使用 World Space
+	if (USceneComponent* ParentComp = RootComponent->GetAttachParent())
+	{
+		TargetPivotTransform = NewRootWorldTransform.GetRelativeTransform(ParentComp->GetComponentTransform());
+	}
+	else
+	{
+		TargetPivotTransform = NewRootWorldTransform;
+	}
 
 	UE_LOG(LogTemp, Log, TEXT("BeginPlay %s"), *GetName());
 }
