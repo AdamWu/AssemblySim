@@ -33,9 +33,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AssemblyCableNode")
 	FTransform TargetOffsetTransform;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AssemblyCableNode")
-	bool bIsClosed = true;
-
 public:
 	virtual void OnClicked();
 

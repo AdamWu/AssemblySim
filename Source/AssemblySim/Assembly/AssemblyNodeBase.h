@@ -40,6 +40,9 @@ public:
     bool bIsRootNode = false;
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AssemblyNodeBase")
+    bool bIsClosed = false;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AssemblyNodeBase")
     bool bIsAllChildrenAssembled = false;
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AssemblyNodeBase")

@@ -30,9 +30,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AssemblyAnimatedNode")
 	FTransform TargetOffsetTransform;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AssemblyAnimatedNode")
-	bool bIsClosed = true;
-
 public:
 	virtual void OnClicked();
 

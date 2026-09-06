@@ -4,6 +4,8 @@
 #include "AssemblyNodeBase.h"
 #include "AssemblySlotComponent.h"
 #include "AssemblyToolBase.h"
+#include "AssemblyAnimatedNode.h"
+#include "AssemblyCableNode.h"
 #include "AssemblyFastenerNode.h"
 #include "AssemblyPlayerController.h"
 #include "AssemblyGameMode.h"
@@ -56,7 +58,7 @@ void AAssemblyInteractionManager::Tick(float DeltaTime)
 				// node
 				if (HitNode && HitNode->ParentSlot) 
 				{
-					if (GameMode->OnCheckStep(EAssemblyAction::Snap, HitNode->NodeID, HitNode->ParentSlot->SlotID))
+					if (GameMode->OnCheckStep(EAssemblyAction::Detach, HitNode->NodeID, HitNode->ParentSlot->SlotID))
 					{
 						HitNode->DetachFromSlot();
 					}
@@ -68,7 +70,7 @@ void AAssemblyInteractionManager::Tick(float DeltaTime)
 				}
 				// tool
 				if (HitTool && HitTool->AttachedNode) {
-					if (GameMode->OnCheckStep(EAssemblyAction::Snap, HitTool->ToolID, HitTool->AttachedNode->NodeID))
+					if (GameMode->OnCheckStep(EAssemblyAction::Detach, HitTool->ToolID, HitTool->AttachedNode->NodeID))
 					{
 						HitTool->DetachFromNode();
 					}
@@ -171,11 +173,12 @@ void AAssemblyInteractionManager::OnMouseLeftReleased()
 		UAssemblySlotComponent* TargetSlot = FindOverlappingSlot(HitNode);
 		if (TargetSlot && TargetSlot->CanAccept(HitNode))
 		{
-			if (GameMode->OnCheckStep(EAssemblyAction::Snap, HitNode->NodeID, TargetSlot->SlotID))
+			if (GameMode->OnCheckStep(EAssemblyAction::Attach, HitNode->NodeID, TargetSlot->SlotID))
 				HitNode->AttachToSlot(TargetSlot);
 		}
-		else {
-			if (GameMode->OnCheckStep(EAssemblyAction::Click, HitNode->NodeID, NAME_None))
+		else if (HitNode->IsA(AAssemblyAnimatedNode::StaticClass()) || HitNode->IsA(AAssemblyCableNode::StaticClass())) {
+			EAssemblyAction Action = HitNode->bIsClosed ? EAssemblyAction::Open : EAssemblyAction::Close;
+			if (GameMode->OnCheckStep(Action, HitNode->NodeID))
 				HitNode->OnClicked();
 		}
 	}
@@ -185,11 +188,12 @@ void AAssemblyInteractionManager::OnMouseLeftReleased()
 		AAssemblyFastenerNode* TargetNode = FindOverlappingFastenerNode(HitTool);
 		if (TargetNode && TargetNode->CanAcceptTool(HitTool))
 		{
-			if (GameMode->OnCheckStep(EAssemblyAction::Snap, HitTool->ToolID, TargetNode->NodeID))
+			if (GameMode->OnCheckStep(EAssemblyAction::Attach, HitTool->ToolID, TargetNode->NodeID))
 				HitTool->AttachToNode(TargetNode);
 		}
 		else if(HitTool->AttachedNode){
-			if (GameMode->OnCheckStep(EAssemblyAction::Click, HitTool->ToolID, NAME_None))
+			EAssemblyAction Action = HitTool->AttachedNode->bIsClosed ? EAssemblyAction::Open : EAssemblyAction::Close;
+			if (GameMode->OnCheckStep(Action, HitTool->ToolID))
 				HitTool->OnClicked();
 		}
 	}

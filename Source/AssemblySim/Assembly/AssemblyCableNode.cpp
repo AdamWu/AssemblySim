@@ -14,6 +14,8 @@ AAssemblyCableNode::AAssemblyCableNode()
 
 	RootComponent->SetMobility(EComponentMobility::Movable);
 
+	bIsClosed = true;
+
 	TimelineComponent = CreateDefaultSubobject<UTimelineComponent>(TEXT("TimelineComponent"));
 }
 

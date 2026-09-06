@@ -53,9 +53,6 @@ public:
 	bool bIsCaptive = false;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AssemblyFastenerNode")
-	bool bIsClosed = false;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AssemblyFastenerNode")
 	AAssemblyToolBase* CurrentTool = nullptr;
 
 	FQuat InitQuat;

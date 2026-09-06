@@ -8,8 +8,10 @@
 UENUM(BlueprintType)
 enum class EAssemblyAction : uint8
 {
-	Click          UMETA(DisplayName = "点击"),
-	Snap           UMETA(DisplayName = "A 碰 B (吸附/放置)")
+	Attach   UMETA(DisplayName = "吸附/安装"),   // A 连接到 B
+	Detach   UMETA(DisplayName = "解绑/卸载"),   // A 从 B 断开
+	Open     UMETA(DisplayName = "打开"),
+	Close    UMETA(DisplayName = "关闭")
 };
 
 /** SOP 单步配置结构体 */
@@ -28,7 +30,7 @@ struct FAssemblyStepData : public FTableRowBase
 
 	/** 动作类型 (Click / Snap) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SOP")
-	EAssemblyAction Action = EAssemblyAction::Click;
+	EAssemblyAction Action = EAssemblyAction::Attach;
 
 	/** 操作主体 ID (支持路径拼接，如 "Slot_Wheel_FL/Group_Bolts") */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SOP")

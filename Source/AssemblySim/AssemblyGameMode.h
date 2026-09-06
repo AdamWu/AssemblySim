@@ -34,7 +34,7 @@ public:
 	bool GetCurrentStepData(FAssemblyStepData& OutStepData) const;
 
 	UFUNCTION(BlueprintCallable, Category = "AssemblyGameMode")
-	bool OnCheckStep(EAssemblyAction Action, FName TargetA, FName TargetB);
+	bool OnCheckStep(EAssemblyAction Action, FName TargetA, FName TargetB = NAME_None);
 
 	// ---------------- Î¯ÍÐÊÂ¼þ ----------------
 

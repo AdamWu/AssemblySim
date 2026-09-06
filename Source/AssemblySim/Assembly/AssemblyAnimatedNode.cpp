@@ -11,6 +11,8 @@ AAssemblyAnimatedNode::AAssemblyAnimatedNode()
 
 	RootComponent->SetMobility(EComponentMobility::Movable);
 
+	bIsClosed = true;
+
 	TimelineComponent = CreateDefaultSubobject<UTimelineComponent>(TEXT("TimelineComponent"));
 }
 
