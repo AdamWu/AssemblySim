@@ -46,7 +46,7 @@ public:
 	float CurveDegrees = 360;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AssemblyFastenerNode")
-	float TotalRotationDegrees = 360;
+	int32 CurveTimes = 1;
 
 	// cannot be detached
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AssemblyFastenerNode")
@@ -58,7 +58,9 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AssemblyFastenerNode")
 	AAssemblyToolBase* CurrentTool = nullptr;
 
-	float LastTimelineValue = 0;
+	FQuat InitQuat;
+
+	int32 CurrentCurveIdx = 0;
 
 public:
 	virtual void AttachToSlot(UAssemblySlotComponent* Slot) override;

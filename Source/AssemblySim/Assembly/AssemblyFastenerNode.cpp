@@ -46,6 +46,8 @@ void AAssemblyFastenerNode::BeginPlay()
 		TimelineComponent->SetLooping(false);
 		TimelineComponent->SetPlayRate(1.0f / CurveDuration);
 	}
+
+	InitQuat = RootComponent->GetRelativeRotation().Quaternion();
 }
 
 
@@ -114,10 +116,8 @@ void AAssemblyFastenerNode::Fasten()
 
 	UE_LOG(LogTemp, Log, TEXT("Fasten %s"), *GetName());
 
-	LastTimelineValue = 0;
+	CurrentCurveIdx = 0;
 	TimelineComponent->PlayFromStart();
-
-	UpdateProgress(bIsClosed ? 1 : 0);
 }
 
 void AAssemblyFastenerNode::OnToolOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, 
@@ -140,36 +140,42 @@ void AAssemblyFastenerNode::OnToolOverlapEnd(UPrimitiveComponent* OverlappedComp
 
 void AAssemblyFastenerNode::HandleTimelineUpdate(float OutputValue)
 {
-	float DeltaValue = OutputValue - LastTimelineValue;
-	DeltaValue *= (bIsClosed ? -1 : 1);
-	LastTimelineValue = OutputValue;
-
-	if (FMath::IsNearlyZero(DeltaValue)) return;
-
 	FTransform SnapToRoot = SnapAnchorComponent->GetRelativeTransform();	
 	FVector AxisInRootSpace = SnapToRoot.TransformVectorNoScale(FVector::UpVector).GetSafeNormal();
 
-	float DeltaAngle = DeltaValue * TotalRotationDegrees;
+	float DeltaAngle = OutputValue * CurveDegrees * (bIsClosed ? -1 : 1);
 	FQuat DeltaQuat = FQuat(AxisInRootSpace, FMath::DegreesToRadians(DeltaAngle));
 
 	FQuat CurrentQuat = RootComponent->GetRelativeRotation().Quaternion();
 	FVector CurrentLocation = RootComponent->GetRelativeLocation();
 
-	FQuat Quat = CurrentQuat * DeltaQuat;
-
+	FQuat Quat = DeltaQuat * InitQuat;
 	RootComponent->SetRelativeRotation(Quat);
 }
 
 void AAssemblyFastenerNode::HandleTimelineFinished()
 {
-	bIsClosed = !bIsClosed;
+	CurrentCurveIdx++;
 
 	UE_LOG(LogTemp, Log, TEXT("HandleTimelineFinished %s"), *GetName());
 
-	UpdateProgress(bIsClosed ? 1 : 0);
+	float Progress = CurrentCurveIdx / (float)CurveTimes;
 
-	// refresh children status
-	UpdateChildrenAssemblyStatus();
+	if (CurrentCurveIdx < CurveTimes)
+	{
+		TimelineComponent->PlayFromStart();
+		UpdateProgress(bIsClosed ? 1 - Progress : Progress);
+	}
+	else
+	{
+		bIsClosed = !bIsClosed;
+		UpdateProgress(bIsClosed ? Progress : 1 - Progress);
+
+		// refresh children status
+		UpdateChildrenAssemblyStatus();
+	}
+
+
 }
 
 
