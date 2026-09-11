@@ -29,6 +29,25 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AssemblySlotComponent")
     FName SlotID;
 
+#if WITH_EDITOR
+    virtual void PostEditChangeProperty(FPropertyChangedEvent PropertyChangedEvent)
+    {
+        Super::PostEditChangeProperty(PropertyChangedEvent);
+        if (Index > 0) {
+            SlotID = *FString::Printf(TEXT("%s.%02d"), *SlotTag.ToString(), Index);
+        }
+        else {
+            SlotID = *SlotTag.ToString();
+        }
+    }
+#endif
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AssemblySlotComponent")
+    FGameplayTag SlotTag;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AssemblySlotComponent")
+    int32 Index = 0;
+
     /** 该插槽允许接收的部件类型 Tag */
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AssemblySlotComponent")
     FGameplayTag AcceptNodeTag;

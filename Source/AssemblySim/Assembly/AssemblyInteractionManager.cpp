@@ -8,7 +8,7 @@
 #include "AssemblyCableNode.h"
 #include "AssemblyFastenerNode.h"
 #include "AssemblyPlayerController.h"
-#include "AssemblyGameMode.h"
+#include "AssemblyTaskSubsystem.h"
 
 AAssemblyInteractionManager::AAssemblyInteractionManager()
 {
@@ -34,7 +34,7 @@ void AAssemblyInteractionManager::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 	if (!PC || !HeldActor) return;
 
-	AAssemblyGameMode* GameMode = Cast<AAssemblyGameMode>(UGameplayStatics::GetGameMode(GetWorld()));
+	UAssemblyTaskSubsystem* TaskSubsystem = GetGameInstance()->GetSubsystem<UAssemblyTaskSubsystem>();
 
 	AAssemblyNodeBase* HitNode = Cast<AAssemblyNodeBase>(HeldActor);
 	AAssemblyToolBase* HitTool = Cast<AAssemblyToolBase>(HeldActor);
@@ -58,7 +58,7 @@ void AAssemblyInteractionManager::Tick(float DeltaTime)
 				// node
 				if (HitNode && HitNode->ParentSlot) 
 				{
-					if (GameMode->OnCheckStep(EAssemblyAction::Detach, HitNode->NodeID, HitNode->ParentSlot->SlotID))
+					if (TaskSubsystem->OnCheckStep(EAssemblyAction::Detach, nullptr, HitNode, HitNode->ParentSlot))
 					{
 						HitNode->DetachFromSlot();
 					}
@@ -70,7 +70,7 @@ void AAssemblyInteractionManager::Tick(float DeltaTime)
 				}
 				// tool
 				if (HitTool && HitTool->AttachedNode) {
-					if (GameMode->OnCheckStep(EAssemblyAction::Detach, HitTool->ToolID, HitTool->AttachedNode->NodeID))
+					if (TaskSubsystem->OnCheckStep(EAssemblyAction::Detach, HitTool, HitTool->AttachedNode))
 					{
 						HitTool->DetachFromNode();
 					}
@@ -167,18 +167,18 @@ void AAssemblyInteractionManager::OnMouseLeftReleased()
 
 	if (!HeldActor) return;
 
-	AAssemblyGameMode* GameMode = Cast<AAssemblyGameMode>(UGameplayStatics::GetGameMode(GetWorld()));
+	UAssemblyTaskSubsystem* TaskSubsystem = GetGameInstance()->GetSubsystem<UAssemblyTaskSubsystem>();
 
 	if (AAssemblyNodeBase* HitNode = Cast<AAssemblyNodeBase>(HeldActor)) {
 		UAssemblySlotComponent* TargetSlot = FindOverlappingSlot(HitNode);
 		if (TargetSlot && TargetSlot->CanAccept(HitNode))
 		{
-			if (GameMode->OnCheckStep(EAssemblyAction::Attach, HitNode->NodeID, TargetSlot->SlotID))
+			if (TaskSubsystem->OnCheckStep(EAssemblyAction::Attach, nullptr, HitNode, TargetSlot))
 				HitNode->AttachToSlot(TargetSlot);
 		}
 		else if (HitNode->IsA(AAssemblyAnimatedNode::StaticClass()) || HitNode->IsA(AAssemblyCableNode::StaticClass())) {
 			EAssemblyAction Action = HitNode->bIsClosed ? EAssemblyAction::Open : EAssemblyAction::Close;
-			if (GameMode->OnCheckStep(Action, HitNode->NodeID))
+			if (TaskSubsystem->OnCheckStep(Action, nullptr, HitNode))
 				HitNode->OnClicked();
 		}
 	}
@@ -188,12 +188,12 @@ void AAssemblyInteractionManager::OnMouseLeftReleased()
 		AAssemblyFastenerNode* TargetNode = FindOverlappingFastenerNode(HitTool);
 		if (TargetNode && TargetNode->CanAcceptTool(HitTool))
 		{
-			if (GameMode->OnCheckStep(EAssemblyAction::Attach, HitTool->ToolID, TargetNode->NodeID))
+			if (TaskSubsystem->OnCheckStep(EAssemblyAction::Attach, HitTool, TargetNode))
 				HitTool->AttachToNode(TargetNode);
 		}
 		else if(HitTool->AttachedNode){
 			EAssemblyAction Action = HitTool->AttachedNode->bIsClosed ? EAssemblyAction::Open : EAssemblyAction::Close;
-			if (GameMode->OnCheckStep(Action, HitTool->ToolID))
+			if (TaskSubsystem->OnCheckStep(Action, HitTool))
 				HitTool->OnClicked();
 		}
 	}

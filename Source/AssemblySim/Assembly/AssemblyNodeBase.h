@@ -33,8 +33,24 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AssemblyNodeBase")
     FName NodeID;
 
+#if WITH_EDITOR
+    virtual void PostEditChangeProperty(FPropertyChangedEvent PropertyChangedEvent)
+    {
+        Super::PostEditChangeProperty(PropertyChangedEvent);
+        if (Index > 0) {
+            NodeID = *FString::Printf(TEXT("%s.%02d"), *NodeTag.ToString(), Index);
+        }
+        else {
+            NodeID = *NodeTag.ToString();
+        }
+    }
+#endif
+
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AssemblyNodeBase")
     FGameplayTag NodeTag;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AssemblyNodeBase")
+    int32 Index = 0;
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AssemblyNodeBase")
     bool bIsRootNode = false;

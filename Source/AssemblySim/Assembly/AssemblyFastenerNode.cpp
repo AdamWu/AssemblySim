@@ -16,7 +16,15 @@ AAssemblyFastenerNode::AAssemblyFastenerNode()
 
 	WidgetComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("Widget"));
 	WidgetComponent->SetupAttachment(RootComponent);
-	WidgetComponent->SetVisibility(false);
+	WidgetComponent->SetVisibility(false);	
+	WidgetComponent->SetWidgetSpace(EWidgetSpace::Screen);
+	WidgetComponent->SetDrawSize(FVector2D(150, 20));
+
+	static ConstructorHelpers::FClassFinder<UUserWidget> WidgetFinder(TEXT("/Game/UI/WBP_ProgressBar.WBP_ProgressBar_C"));
+	if (WidgetFinder.Succeeded())
+	{
+		WidgetComponent->SetWidgetClass(WidgetFinder.Class);
+	}
 
 	TriggerZone = CreateDefaultSubobject<USphereComponent>(TEXT("Trigger"));
 	TriggerZone->SetupAttachment(RootComponent);

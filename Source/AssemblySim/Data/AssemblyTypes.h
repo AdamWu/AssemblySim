@@ -2,14 +2,15 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DataTable.h"
+#include "GameplayTagContainer.h"
 #include "AssemblyTypes.generated.h"
 
 /** 动作类型 */
 UENUM(BlueprintType)
 enum class EAssemblyAction : uint8
 {
-	Attach   UMETA(DisplayName = "吸附/安装"),   // A 连接到 B
-	Detach   UMETA(DisplayName = "解绑/卸载"),   // A 从 B 断开
+	Attach   UMETA(DisplayName = "吸附"),   // A 连接到 B
+	Detach   UMETA(DisplayName = "解绑"),   // A 从 B 断开
 	Open     UMETA(DisplayName = "打开"),
 	Close    UMETA(DisplayName = "关闭")
 };
@@ -47,4 +48,55 @@ struct FAssemblyStepData : public FTableRowBase
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SOP")
 	TMap<FName, FString> RequiredAttributes;
+};
+
+USTRUCT(BlueprintType)
+struct FAssemblyEntityData : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Node")
+	FGameplayTag TagName;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Node")
+	FString DisplayName = TEXT("Unknown");
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Node")
+	TMap<EAssemblyAction, FString> ActionNames;
+
+	FAssemblyEntityData()
+	{
+		ActionNames.Add(EAssemblyAction::Attach, TEXT("安装"));
+		ActionNames.Add(EAssemblyAction::Detach, TEXT("卸载"));
+		ActionNames.Add(EAssemblyAction::Open, TEXT("打开"));
+		ActionNames.Add(EAssemblyAction::Close, TEXT("关闭"));
+	}
+};
+
+USTRUCT(BlueprintType)
+struct FAssemblyLog
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadOnly)
+	FDateTime TimeStamp = 0;
+
+	UPROPERTY(BlueprintReadOnly)
+	int32 StepIndex = 0;
+
+	UPROPERTY(BlueprintReadOnly)
+	FString ActionName = "";
+
+	UPROPERTY(BlueprintReadOnly)
+	FString ToolName = "";
+
+	UPROPERTY(BlueprintReadOnly)
+	FString NodeName = "";
+
+	UPROPERTY(BlueprintReadOnly)
+	FString SlotName = "";
+
+	UPROPERTY(BlueprintReadOnly)
+	FString FormatString = "";
+
 };

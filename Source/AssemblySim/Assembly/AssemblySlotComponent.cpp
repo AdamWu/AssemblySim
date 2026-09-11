@@ -8,21 +8,17 @@
 UAssemblySlotComponent::UAssemblySlotComponent()
 {
     PrimaryComponentTick.bCanEverTick = false;
-    USceneComponent* RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("RootComponent"));
+    //USceneComponent* RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("RootComponent"));
 
-    /*
-    // 1. 创建触发区 (默认 Box)
-    UBoxComponent* BoxComp = CreateDefaultSubobject<UBoxComponent>(TEXT("TriggerZone"));
-    TriggerZone = BoxComp;
-    TriggerZone->SetupAttachment(RootComponent);
+    TriggerZone = CreateDefaultSubobject<USphereComponent>(TEXT("TriggerZone"));
+    TriggerZone->SetupAttachment(this);
     TriggerZone->SetCollisionProfileName(TEXT("Trigger"));
 
-    // 2. 创建 Ghost 预览模型 (无碰撞、默认隐藏)
     PreviewMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PreviewMesh"));
-    PreviewMeshComponent->SetupAttachment(RootComponent);
+    PreviewMeshComponent->SetupAttachment(this);
     PreviewMeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
     PreviewMeshComponent->SetVisibility(false);
-    */
+    
     static ConstructorHelpers::FObjectFinder<UMaterialInterface> MaterialFinder(TEXT("Material'/Game/Materials/M_Preview'"));
     if (MaterialFinder.Succeeded())
     {
@@ -58,20 +54,8 @@ void UAssemblySlotComponent::BeginPlay()
         Node->UpdateChildrenAssemblyStatus();
     }
 
-    TriggerZone = FindObject<UShapeComponent>(this, TEXT("Trigger"));
-    PreviewMeshComponent = FindObject<UStaticMeshComponent>(this, TEXT("Preview"));
-
-    TArray<USceneComponent*> Childen;
-    GetChildrenComponents(false, Childen);
-
-    for (USceneComponent* child : Childen) {
-        if (child->GetName().StartsWith(TEXT("Trigger"))) TriggerZone = (UShapeComponent*)child;
-        if (child->GetName().StartsWith(TEXT("Preview"))) PreviewMeshComponent = (UStaticMeshComponent*)child;
-    }
-
     if (TriggerZone)
     {
-        //TriggerZone->SetCollisionProfileName(TEXT("Trigger"));
         TriggerZone->OnComponentBeginOverlap.AddDynamic(this, &UAssemblySlotComponent::OnTriggerBeginOverlap);
         TriggerZone->OnComponentEndOverlap.AddDynamic(this, &UAssemblySlotComponent::OnTriggerEndOverlap);
     }
@@ -134,6 +118,7 @@ void UAssemblySlotComponent::SetSlotHovered(bool bHovered, AAssemblyNodeBase* No
         {
             if (UStaticMeshComponent* PartMeshComp = Node->FindComponentByClass<UStaticMeshComponent>())
             {
+                PreviewMeshComponent->SetWorldScale3D(PartMeshComp->GetComponentScale());
                 PreviewMeshComponent->SetStaticMesh(PartMeshComp->GetStaticMesh());
             }
         }
