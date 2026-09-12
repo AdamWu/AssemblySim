@@ -32,8 +32,20 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AssemblyToolBase")
     USceneComponent* SnapAnchorComponent;
 
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AssemblyToolBase")
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AssemblyToolBase")
     FName ToolID;
+
+#if WITH_EDITOR
+    virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override
+    {
+        Super::PostEditChangeProperty(PropertyChangedEvent);
+
+        FString TagString = ToolTag.ToString();
+        TagString.RemoveFromStart(TEXT("Assembly."));
+        TagString.ReplaceInline(TEXT("."), TEXT("_"));
+        ToolID = *TagString;
+    }
+#endif
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AssemblyToolBase")
     FGameplayTag ToolTag;

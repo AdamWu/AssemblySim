@@ -67,7 +67,7 @@ struct FAssemblyEntityData : public FTableRowBase
 	FAssemblyEntityData()
 	{
 		ActionNames.Add(EAssemblyAction::Attach, TEXT("安装"));
-		ActionNames.Add(EAssemblyAction::Detach, TEXT("卸载"));
+		ActionNames.Add(EAssemblyAction::Detach, TEXT("拆卸"));
 		ActionNames.Add(EAssemblyAction::Open, TEXT("打开"));
 		ActionNames.Add(EAssemblyAction::Close, TEXT("关闭"));
 	}
@@ -79,7 +79,7 @@ struct FAssemblyLog
 	GENERATED_BODY()
 
 	UPROPERTY(BlueprintReadOnly)
-	FDateTime TimeStamp = 0;
+	FDateTime Timestamp = 0;
 
 	UPROPERTY(BlueprintReadOnly)
 	int32 StepIndex = 0;

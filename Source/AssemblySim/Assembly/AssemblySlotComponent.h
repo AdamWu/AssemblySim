@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "Components/SceneComponent.h"
 #include "GameplayTagContainer.h"
+#include "AssemblyNodeBase.h"
 #include "AssemblySlotComponent.generated.h"
 
 class AAssemblyNodeBase;
@@ -26,18 +27,30 @@ protected:
 
 public:
 
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AssemblySlotComponent")
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AssemblySlotComponent")
     FName SlotID;
 
 #if WITH_EDITOR
-    virtual void PostEditChangeProperty(FPropertyChangedEvent PropertyChangedEvent)
+    virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override
     {
         Super::PostEditChangeProperty(PropertyChangedEvent);
+
+        FString TagString = SlotTag.ToString();
+        TagString.RemoveFromStart(TEXT("Assembly."));
+        TagString.ReplaceInline(TEXT("."), TEXT("_"));
+
         if (Index > 0) {
-            SlotID = *FString::Printf(TEXT("%s.%02d"), *SlotTag.ToString(), Index);
+            SlotID = *FString::Printf(TEXT("%s_%02d"), *TagString, Index);
         }
         else {
-            SlotID = *SlotTag.ToString();
+            SlotID = *TagString;
+        }
+
+        if (AAssemblyNodeBase* NodeBase = Cast<AAssemblyNodeBase>(GetOwner()))
+        {
+            ParentNode = NodeBase;
+            FString Str = FString::Printf(TEXT("%s_%s"), *ParentNode->NodeID.ToString(), *SlotID.ToString());
+            SlotID = FName(*Str);
         }
     }
 #endif

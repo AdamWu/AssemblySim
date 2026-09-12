@@ -31,12 +31,6 @@ void UAssemblySlotComponent::BeginPlay()
 {
     Super::BeginPlay();
 
-    if (AAssemblyNodeBase* NodeBase = Cast<AAssemblyNodeBase>(GetOwner()))
-    {
-        ParentNode = NodeBase; 
-        FString Str = FString::Printf(TEXT("%s_%s"), *ParentNode->NodeID.ToString(), *SlotID.ToString());
-        SlotID = FName(*Str);
-    }
 
     if (bIsLockPosition) SetUsingAbsoluteLocation(true);
     if (bIsLockRotation) SetUsingAbsoluteRotation(true);

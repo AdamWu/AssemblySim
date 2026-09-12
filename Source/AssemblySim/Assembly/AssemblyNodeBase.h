@@ -30,18 +30,23 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AssemblyNodeBase")
     TObjectPtr<UStaticMeshComponent> MeshComponent;
 
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AssemblyNodeBase")
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AssemblyNodeBase")
     FName NodeID;
 
 #if WITH_EDITOR
-    virtual void PostEditChangeProperty(FPropertyChangedEvent PropertyChangedEvent)
+    virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override
     {
         Super::PostEditChangeProperty(PropertyChangedEvent);
+
+        FString TagString = NodeTag.ToString();
+        TagString.RemoveFromStart(TEXT("Assembly."));
+        TagString.ReplaceInline(TEXT("."), TEXT("_"));
+
         if (Index > 0) {
-            NodeID = *FString::Printf(TEXT("%s.%02d"), *NodeTag.ToString(), Index);
+            NodeID = *FString::Printf(TEXT("%s_%02d"), *TagString, Index);
         }
         else {
-            NodeID = *NodeTag.ToString();
+            NodeID = *TagString;
         }
     }
 #endif

@@ -100,40 +100,64 @@ bool UAssemblyTaskSubsystem::OnCheckStep(EAssemblyAction Action, AAssemblyToolBa
 	}
 
 	FAssemblyLog Log;
+	Log.Timestamp = FDateTime::Now();
+
 	if (Tool) Log.ToolName = Tool->ToolID.ToString();
 	if (Node) Log.NodeName = Node->NodeID.ToString();
 	if (Slot) Log.SlotName = Slot->SlotID.ToString();
 
+	FString TimestampStr = Log.Timestamp.ToString(TEXT("%H:%M:%S"));
 
 	if (Action == EAssemblyAction::Attach || Action == EAssemblyAction::Detach)
 	{
 		FName TargetA = Tool ? Tool->ToolID : Node->NodeID;
-		FName TargetB = Node ? Node->NodeID : Slot->SlotID;
+		FName TargetB = Slot ? Slot->SlotID : Node->NodeID;
+
+		FAssemblyEntityData EntityA = Tool ? EntityConfigs[Tool->ToolTag] : EntityConfigs[Node->NodeTag];
+		FAssemblyEntityData EntityB = Slot ? EntityConfigs[Slot->SlotTag] : EntityConfigs[Node->NodeTag];
+		Log.ActionName = EntityA.ActionNames[Action];
 		
-		if (CurrentStep.TargetA != TargetA || CurrentStep.TargetB != TargetB)
+		if (Action == EAssemblyAction::Attach)
+		{
+			Log.FormatString = FString::Printf(TEXT("[%s] [%s] %s [%s]"), *TimestampStr, *EntityA.DisplayName, *Log.ActionName, *EntityB.DisplayName);
+		}
+		else if (Action == EAssemblyAction::Detach)
+		{
+			Log.FormatString = FString::Printf(TEXT("[%s] 从 [%s] %s [%s]"), *TimestampStr, *EntityB.DisplayName, *Log.ActionName, *EntityA.DisplayName);
+		}
+
+		if (CurrentStep.Action != Action || CurrentStep.TargetA != TargetA || CurrentStep.TargetB != TargetB)
 		{
 			FText ErrorMsg = FText::FromString(TEXT("零件或装配槽位不正确！"));
 			UE_LOG(LogTemp, Warning, TEXT("error target！ %s"), *CurrentStep.Desc);
 			return false;
 		}
-
-		Log.ActionName = Action == EAssemblyAction::Attach ? TEXT("安装") : TEXT("卸载");
 
 	}
 	else if (Action == EAssemblyAction::Open || Action == EAssemblyAction::Close)
 	{
-		FName TargetA = Node ? Node->NodeID : Tool->ToolID;
+		FName TargetA = Tool ? Tool->ToolID : Node->NodeID;
 
-		if (CurrentStep.TargetA != TargetA)
+		FAssemblyEntityData EntityA = Tool ? EntityConfigs[Tool->ToolTag] : EntityConfigs[Node->NodeTag];
+		Log.ActionName = EntityA.ActionNames[Action];
+		
+		if (Tool)
+		{
+			Log.FormatString = FString::Printf(TEXT("[%s] 使用 [%s] %s"), *TimestampStr, *EntityA.DisplayName, *Log.ActionName);
+		}
+		else
+		{
+			Log.FormatString = FString::Printf(TEXT("[%s] %s [%s]"), *TimestampStr, *Log.ActionName, *EntityA.DisplayName);
+		}
+
+		if (CurrentStep.Action != Action || CurrentStep.TargetA != TargetA)
 		{
 			FText ErrorMsg = FText::FromString(TEXT("零件或装配槽位不正确！"));
 			UE_LOG(LogTemp, Warning, TEXT("error target！ %s"), *CurrentStep.Desc);
 			return false;
 		}
-		Log.ActionName = Action == EAssemblyAction::Open ? TEXT("打开") : TEXT("关闭");
 	}
 
-	Log.FormatString = FString::Printf(TEXT("[%s] [工具：%s] %s 组件 [%s] -> [%s]"), *FDateTime::Now().ToString(TEXT("%H:%M:%S")), *Log.ToolName, *Log.ActionName, *Log.NodeName, *Log.SlotName);
 	UE_LOG(LogTemp, Warning, TEXT("log: %s"), *Log.FormatString);
 
 	CurrentStepIndex++;
